@@ -24,6 +24,59 @@ its `meta-source/packs.edn`; a pack is loaded only when `:packs` enables it.
 - [review/](review/README.md): on [sdiff](https://github.com/semantic-namespace/diff)'s
   review page, the findings a change introduces and those it fixes
 
+## Adopting them in an existing app
+
+![Adopting meta-source in an existing app, in Emacs, one pack at a time](docs/images/meta-source-adoption.gif)
+
+An app with an integrant system, specs and Pathom resolvers, open in Emacs,
+adopting meta-source one line at a time (every edit is typed in the
+recording):
+
+1. **`{:packs {:integrant {:configs ["resources"]}}}`**: a ref to a
+   component no config defines, underlined in `system.edn`.
+2. **`:pathom {}`**: resolver inputs nothing produces.
+3. **`:spec {}`, and one fact in EDN, `{:user/email {:data/privacy :pii}}`**:
+   `C-c .` on `:user/email` puts three sources together:
+
+   ```
+   :user/email    data key
+
+   spec       (s/and string? #(re-find #"@" %1))    src/shop/spec.clj:5
+   :data/privacy  :pii
+   member of
+     :shop.spec/user    src/shop/spec.clj:12
+
+   produced by
+     :shop.resolvers/user-by-id    src/shop/resolvers.clj:11
+
+   consumed by
+     :shop.resolvers/user-by-email    src/shop/resolvers.clj:4
+   ```
+4. **Nothing**: the `s/fdef` the app already has for `place-order` is its
+   contract, so the code reading `:order/discount`, which the fdef doesn't
+   declare, is underlined. A function with no fdef can opt in with a meta
+   key and a contract in EDN.
+
+What it cost, by `git status`: a `meta-source.edn` and a `registry/`
+directory. No line of code changed.
+
+### On a re-frame app
+
+![A re-frame app adopting meta-source in Emacs](docs/images/meta-source-re-frame.gif)
+
+1. **`{:packs {:re-frame {:provided [:http-xhrio]}}}`**: an `:on-failure`
+   callback to an event nothing registers, and a subscription with a typo.
+   re-frame would only log them, when they run.
+2. **`C-c .` on `::events/checkout`**: where it is registered and
+   dispatched from, what it dispatches, the effects it returns, the keys it
+   writes.
+3. **`:spec {}` and `{:user/email {:data/privacy :pii}}`**: `C-c .` on
+   `:user/email` gives its spec, that it is PII, the event that writes it and
+   the subscription that reads it.
+4. **The typo fixed**: the underline goes.
+
+## Working on them
+
 ```sh
 bb smoke                   # every pack's checks; bb smoke reitit, one suite
 bb meta-source check --brief --root examples/billing
