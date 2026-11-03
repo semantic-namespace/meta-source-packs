@@ -1,7 +1,7 @@
 ;; meta-source's packs for Clojure libraries: their checks run here, with
-;; the core (..) on the classpath.
+;; meta-source (the core) at a commit on the classpath.
 {:paths ["src" "resources" "bb"]
- :deps {io.github.semantic-namespace/meta-source {:local/root ".."}}
+ :deps {io.github.semantic-namespace/meta-source {:git/url "https://github.com/semantic-namespace/meta-source" :git/sha "90023bf638cf094fcff8a69719f61830ae3898a4"}}
  :tasks {meta-source {:doc "meta-source with these packs on the classpath: bb meta-source check --root examples/billing"
                       :requires ([meta-source.cli])
                       :task (apply meta-source.cli/-main *command-line-args*)}

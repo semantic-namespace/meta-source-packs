@@ -23,7 +23,7 @@
 (defn -main []
   (let [deps (pr-str {:deps {'clj-kondo/clj-kondo {:mvn/version "2026.01.19"}
                              'cheshire/cheshire {:mvn/version "5.13.0"}
-                             'io.github.semantic-namespace/meta-source {:local/root ".."}
+                             'io.github.semantic-namespace/meta-source {:git/url "https://github.com/semantic-namespace/meta-source" :git/sha "90023bf638cf094fcff8a69719f61830ae3898a4"}
                              'io.github.semantic-namespace/meta-source-packs {:local/root "."}}})
         expr (str "(doseq [n '" (pr-str namespaces) "] (require n))"
                   "(let [idx ((requiring-resolve 'meta-source.index/build) ((requiring-resolve 'meta-source.cli/config) {:root \"" fixture "\"}))]"

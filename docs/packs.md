@@ -11,7 +11,7 @@ pack is loaded only when the project enables it under `:packs`:
 ```
 
 How a pack is written, the contract each of these follows, and the rules
-every pack shares are in meta-source's [packs.md](../../docs/packs.md). The
+every pack shares are in meta-source's [packs.md](https://github.com/semantic-namespace/meta-source/blob/main/docs/packs.md). The
 packs here:
 
 - [Data keys from clojure.spec and malli: the schema pack](#data-keys-from-clojurespec-and-malli-the-schema-pack)
@@ -473,7 +473,7 @@ reported: the fn itself (`(def dispatch rf/dispatch)`), a call given it
 one, and a wrapper that registers through `re-frame.registrar` isn't found:
 declare it.
 
-On the [precision corpus](../../corpus/README.md), declaring the wrappers of
+On the [precision corpus](https://github.com/semantic-namespace/meta-source-corpus), declaring the wrappers of
 three apps (status-mobile, vetd-app, mercurius) took `event-not-registered`
 and `sub-not-registered` from 540 findings, 27 of them real, to 36, all
 real.
