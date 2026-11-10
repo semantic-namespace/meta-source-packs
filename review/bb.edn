@@ -4,7 +4,7 @@
         ;; the packs a reviewed repository's meta-source.edn may enable
         io.github.semantic-namespace/meta-source-packs {:local/root ".."}
         io.github.semantic-namespace/diff {:git/url "https://github.com/semantic-namespace/diff"
-                                           :git/sha "dea178353b9c8cc7e97d09c613b1a6d40e596940"}}
+                                           :git/sha "8b0a52dfd8ea8ab3b634eb4fe36fbf824e405f59"}}
  :tasks {review {:doc "text <repo> <base> <head> | pr <owner/repo#N> | serve [port] [--host addr]"
                  :requires ([meta-source.review.main])
                  :task (apply meta-source.review.main/-main *command-line-args*)}
