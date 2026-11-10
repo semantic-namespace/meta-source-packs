@@ -50,7 +50,10 @@
             out (with-out-str (binding [d/*ctx* (@d/context-fn r)] (text/print-report r)))]
         (is (str/includes? out "1 finding introduced · 1 fixed"))
         (is (re-find #"(?s)place-order\n.*introduces.*:user/name is used here but is not in :fn/place-order's contract" out))
-        (is (re-find #"(?s)s/def ::user.*fixes.*:user/emial" out))))))
+        (is (re-find #"(?s)s/def ::user.*fixes.*:user/emial" out))
+        (testing "the declaration beside the code that names it"
+          (is (re-find #"(?s)place-order\n.*:fn/place-order · used by nothing · ⚠ 1\n.*:fn/reads :user/id :order/lines\n.*declared registry/functions.edn:8\n.*implemented shop.handlers/place-order src/shop/handlers.clj:7-10" out))
+          (is (not (re-find #"(?s)s/def ::user.*declared" out)) "a form naming no id has none"))))))
 
 (deftest a-ref-that-moves-is-read-again
   (let [[dir base _] (shop-repo)

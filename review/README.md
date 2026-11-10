@@ -38,6 +38,23 @@ Fixed
 The header lists them all; a changed form shows those located inside it,
 introduced on its head side, fixed on its base side.
 
+A changed form whose var names an id also shows that id's declaration at the
+head: its entry, where it is declared and implemented, what names or calls
+it, and check's findings on it. On the page it is one line to open, with the
+locations linked to the head commit on GitHub:
+
+```
+      derived · meta-source
+      :fn/place-order · used by nothing · ⚠ 1
+      :fn/needs #{}
+      :fn/reads :user/id :order/lines
+      :fn/returns :order/id :order/total
+      declared registry/functions.edn:8
+      implemented shop.handlers/place-order src/shop/handlers.clj:7-10
+      findings
+      info :order/discount :user/name is used here but is not in :fn/place-order's contract
+```
+
 ## Dependencies through keywords
 
 sdiff's dependency graph is clj-kondo's: calls between vars. A system wired
