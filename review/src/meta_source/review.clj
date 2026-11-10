@@ -166,14 +166,39 @@
     (or (not-empty (git-out dir "stash" "create")) (git-out dir "rev-parse" "HEAD"))
     (git-out dir "rev-parse" "--verify" (str ref "^{commit}"))))
 
+(defonce ^:private declared (atom {}))
+
+(defn declarations-at
+  "`{:index idx :by-file {path [[id row end-row] ...]}}`: the head's index, and
+   the vars that name an id (`index/linked-vars`), by the path the report uses;
+   nil when the head has no meta-source.edn and no fallback names it."
+  [source head]
+  (let [k [source head]]
+    (if (contains? @declared k)
+      (@declared k)
+      (let [dir (tree! source head)
+            r (when-let [config (or (own-settings dir) (fallback (:gh source)))]
+                (let [idx (index-at dir config)
+                      prefix (str dir "/")
+                      rel (fn [f] (if (str/starts-with? f prefix) (subs f (count prefix)) f))]
+                  {:index idx
+                   :problems (group-by :dev-id (index/check idx))
+                   :by-file (group-by first
+                                      (for [[id vs] (index/linked-vars idx) v vs :when (:row v)]
+                                        [(rel (:filename v)) id (:row v) (or (:end-row v) (:row v))]))}))]
+        (swap! declared assoc k r)
+        r))))
+
 (defn context-for
-  "What the decorators read for `report`: `{::delta ...}`, or `{::error msg}`."
+  "What the decorators read for `report`: `{::delta ... ::declared (delay ...)}`,
+   or `{::error msg}`."
   [report]
   (when-let [source (source-of report)]
     (try (let [[base head] (if (:git source)
                              (map #(commit-of (:git source) %) [(:base report) (:head report)])
                              [(:base report) (:head report)])]
-           {::delta (compare-commits source base head)})
+           {::delta (compare-commits source base head)
+            ::declared (delay (declarations-at source head))})
          (catch Exception e {::error (ex-message e)}))))
 
 (defn- line-of [p]
@@ -223,6 +248,77 @@
                  (when (seq in) (list [:p "introduces"] [:ul (map line-of in)]))
                  (when (seq out) (list [:p "fixes"] [:ul (map line-of out)])))))))
 
+;; --- the declaration, beside the code that names it
+
+(def ^:private table {:style "border-collapse:collapse;margin:.4rem 0 .2rem"})
+(def ^:private label {:style "opacity:.65;padding:.1rem .9rem .1rem 0;vertical-align:top;white-space:nowrap"})
+(def ^:private cell {:style "padding:.1rem 0;vertical-align:top"})
+(def ^:private dim {:style "opacity:.65"})
+
+(defn- row
+  "A row of the declaration: `k`, then `v`, or one line per item of `vs`."
+  ([k v] [:tr [:td label k] [:td cell v]])
+  ([k _ vs] [:tr [:td label k] [:td cell (for [v vs] [:div v])]]))
+
+(defn- at-head
+  "`loc` as `file:line`, linked to the head commit on GitHub when the report
+   is a pull request's."
+  [report {:keys [file line end-line]}]
+  (when file
+    (let [label (str file ":" line (when (and end-line (not= end-line line)) (str "-" end-line)))
+          repo (get-in report [:pr :repo])]
+      (if repo
+        [:a {:href (str "https://github.com/" repo "/blob/" (:head report) "/" file "#L" line
+                        (when (and end-line (not= end-line line)) (str "-L" end-line)))}
+         [:code label]]
+        [:code label]))))
+
+(defn- chips [xs] (interpose " " (for [x xs] [:span.tag.tag-sem (pr-str x)])))
+
+(defn- value
+  "An entry's value, readable: text as text, a collection of keywords as tags."
+  [v]
+  (cond (string? v) v
+        (and (coll? v) (seq v) (every? keyword? v)) (chips (if (set? v) (sort v) v))
+        :else [:code (pr-str v)]))
+
+(defn- declaration [index problems report id]
+  (let [{:keys [entry definition impl]} (index/where index id)
+        {:keys [referenced-by called-from]} (index/uses index id)
+        ps (get problems id)
+        users (count (concat referenced-by called-from))]
+    [:details
+     [:summary [:code (pr-str id)]
+      (when-let [d (index/describe index entry)] (list " · " [:span dim (first (str/split d #"\s{2,}"))]))
+      " · " [:span dim (if (zero? users) "used by nothing" (str "used by " users))]
+      (when (seq ps) (list " · " [:span.tag.tag-del (str "⚠ " (count ps))]))]
+     [:table table
+      [:tbody
+       (for [[k v] (sort-by (comp str key) entry)] (row (pr-str k) (value v)))
+       (row "declared" (at-head report definition))
+       (row "implemented" (if impl (list (when (:var impl) [:code (str (:var impl))]) " " (at-head report impl)) "nowhere"))
+       (when (seq referenced-by)
+         (row "named by" :each (for [r referenced-by] (list [:code (pr-str (:dev-id r))] [:span dim (str " via " (pr-str (:via r)) " ")] (at-head report (:definition r))))))
+       (when (seq called-from)
+         (row "called from" :each (for [c called-from] (list [:code (str (:var c))] " " (at-head report c)))))
+       (when (seq ps)
+         (row "findings" :each (for [p ps] (list [:span.tag.tag-del (name (:severity p))] " "
+                                                  (str/replace (hover/message index p nil) #"^meta-source: " "")))))]]]))
+
+(defn form-declarations
+  "The declaration of each id a var inside the head side of `form` names:
+   its entry, where it is declared and implemented, what uses it, and
+   check's findings on it."
+  [ctx file form]
+  (when-let [{:keys [index problems by-file]} (some-> (::declared ctx) deref)]
+    (let [path (:path file)
+          report (:report ctx)
+          fr (or (when (:new file) file) (some #(when (= path (:path %)) %) (:clj report)))
+          [from to] (rows (:new fr) (:id form))
+          ids (when from (distinct (for [[_ id row] (get by-file path) :when (<= from row to)] id)))]
+      (when (seq ids)
+        (derived "meta-source" (for [id ids] (declaration index problems report id)))))))
+
 (defn install!
   "Registers the decorators, and wraps the context builder in place so the
    host's own context is kept."
@@ -230,5 +326,6 @@
   (let [prev @d/context-fn]
     (d/use-context! (fn [report] (merge (prev report) (context-for report)))))
   (d/add-header-decorator! ::findings header)
+  (d/add-form-decorator! ::declarations form-declarations)
   (d/add-form-decorator! ::findings form-line)
   ((requiring-resolve 'meta-source.review.bridge/install!)))
