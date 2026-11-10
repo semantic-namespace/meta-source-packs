@@ -1,4 +1,4 @@
 ;; meta-source's packs for Clojure libraries, as a library: a project names it
 ;; in meta-source.edn's :deps, and enables a pack under :packs.
 {:paths ["src" "resources"]
- :deps {io.github.semantic-namespace/meta-source {:git/url "https://github.com/semantic-namespace/meta-source" :git/sha "90023bf638cf094fcff8a69719f61830ae3898a4"}}}
+ :deps {io.github.semantic-namespace/meta-source {:git/url "https://github.com/semantic-namespace/meta-source" :git/sha "9c3f10553fcc63ada2062a4f0aeb645eadcc928a"}}}
