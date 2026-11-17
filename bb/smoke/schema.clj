@@ -82,4 +82,24 @@
              (str/includes? (get-in idx [:entities :app.spec/status :entry :spec/form]) "\"::draft\""))
       (check "reading: ::name and ::alias/name resolve to the file's namespace and its aliases"
              (= [:app.model/user] (get-in idx [:entities :app.spec/owner :entry :spec/req]))))
+    (fs/delete-tree dir))
+
+  ;; ---- what a spec's keys are to it: the keys it's made of are dependencies,
+  ;; the other keywords it names (an enum's values) a relation
+  (let [dir (str (fs/create-temp-dir))]
+    (fs/create-dirs (str dir "/src/app"))
+    (fs/create-dirs (str dir "/resources"))
+    (spit (str dir "/resources/system.edn") "{:app.spec/db {} :app.spec/cache {}}\n")
+    (spit (str dir "/src/app/spec.clj")
+          (str "(ns app.spec (:require [clojure.spec.alpha :as s]))\n"
+               "(s/def ::opts (s/keys :req [::db]))\n"
+               "(s/def ::store #{::cache})\n"))
+    (let [idx (index/build {:root dir :src ["src"] :registry [] :cache nil
+                            :packs {:spec {} :integrant {:configs ["resources/system.edn"]}}})
+          reached #(set (map :dev-id (:reaches (index/reach idx %))))]
+      (check "a spec depends on the keys it's made of (:spec/req), not on the keywords it names (:spec/refs)"
+             (and (= :spec/req (get-in idx [:relations :spec/req]))
+                  (contains? (reached :app.spec/opts) :app.spec/db)
+                  (= :spec/refs (get-in idx [:relations :spec/refs]))
+                  (not (contains? (reached :app.spec/store) :app.spec/cache)))))
     (fs/delete-tree dir)))

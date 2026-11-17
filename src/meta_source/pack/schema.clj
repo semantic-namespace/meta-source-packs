@@ -237,4 +237,15 @@
    :pack/inline-data-keys inline-data-keys
    :pack/shape (fn [entry kind] (get (shapes entry) kind))
    :pack/members member-keys
+   ;; what each key's ids are to the schema: the keys it's made of are what
+   ;; it depends on, each under its own name for rules to follow. Its refs
+   ;; are every qualified keyword in the form, an enum's values among them,
+   ;; so a relation it names, not a dependency
+   :pack/relations {:spec/req {:verb :spec/req :depends true}
+                    :spec/opt {:verb :spec/opt :depends true}
+                    :spec/req-un {:verb :spec/req-un :depends true}
+                    :spec/opt-un {:verb :spec/opt-un :depends true}
+                    :spec/refs {:verb :spec/refs}
+                    :malli/keys {:verb :malli/keys :depends true}
+                    :malli/refs {:verb :malli/refs}}
    :pack/checks checks})

@@ -824,6 +824,18 @@
    ;; what a component's init-key hands each fn it calls, as the components
    ;; its config refers to under the keys passed; :unknown when not followed
    :pack/not-references #{:integrant/ref-keys}
+   ;; what each key's ids are to the component: its refs are what it's built
+   ;; from; what it derives from (a composite key's other keywords, or a
+   ;; derive in the code) is where its init-key comes from when it has none
+   ;; of its own, so a dependency too; the keys its init-key or expand-key
+   ;; writes are a relation, not a dependency
+   :pack/relations {:integrant/refs {:verb :depends}
+                    :integrant/refsets {:verb :depends}
+                    :integrant/composite-refs {:verb :depends}
+                    :integrant/derives {:verb :integrant/derives :depends true}
+                    :integrant/isa {:verb :integrant/isa :depends true}
+                    :integrant/init-writes {:verb :integrant/init-writes}
+                    :integrant/expands-to {:verb :integrant/expands-to}}
    ;; where a component's init-key uses its config: [[ids-or-:unknown
    ;; [enclosing callee ...]] ...], the ids the components the used config key
    ;; refers to; :unknown when not known; [] when it uses none

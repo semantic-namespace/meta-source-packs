@@ -46,6 +46,15 @@ and for a `:map` its qualified `:malli/keys` and its `:malli/unqualified-keys`.
 Forms are kept as text. Nothing is loaded; `.cljc` reader conditionals are
 read as `:clj`.
 
+A schema depends on the keys it's made of, so `deps` and `:reaches` follow
+them; each is also a relation under the key that lists it (`:spec/req`,
+`:spec/opt`, `:spec/req-un`, `:spec/opt-un`, `:malli/keys`), for a rule to
+follow by name (`{:related {:spec/req …}}`). `:spec/refs` and `:malli/refs`
+are every other qualified keyword in the form, an enum's values among them:
+relations, not dependencies. (A data key is never a reference, so these
+edges only reach entities that aren't data keys: a component a config spec
+names, a state an enum lists.)
+
 A data key is one entity whatever describes it, so a registry file can add
 facts the schema has no place for:
 
@@ -257,6 +266,13 @@ Each config key becomes a component, in the pack's own vocabulary:
   config, `(ig/ref k)` in a config written in code. Refs are references, so
   `meta-source uses :shop/db` lists the components that need it, and an EDN
   contract naming a component in its deps links a function to it.
+- What each key's ids are (`:pack/relations`): `:integrant/refs`,
+  `:integrant/refsets` and `:integrant/composite-refs` are dependencies
+  (`:depends`). What a key derives from, `:integrant/derives` and
+  `:integrant/isa`, is a relation of that name and a dependency too: a key
+  with no `init-key` of its own runs its parent's. The keys an `init-key`
+  writes (`:integrant/init-writes`) or an `expand-key` adds
+  (`:integrant/expands-to`) are relations, not dependencies.
 - Config files are read all at once: a key that a `.mock.edn` or test variant
   configures too is one component with every file listed, not a conflict.
   Tags no reader knows (`#env`, `#or`, `#profile`) are kept as data.
@@ -732,6 +748,14 @@ state lists the states that go to it and its machines. The pack describes its
 states, as atlas describes an integrant key: a state is often another
 registry's id (a workflow step, an error spec), whose declaration stays
 primary.
+
+What each key's ids are (`:pack/relations`): a machine depends on its
+`:tilakone/states`, so `deps` and `:reaches` go from a machine to its states.
+The rest are relations by name, not dependencies: `:tilakone/initial`,
+`:tilakone/transitions`, `:tilakone/on`, `:tilakone/to`, and a state's
+`:tilakone/machines` as `:tilakone/state-of`. A state doesn't reach its
+machine, nor the states it goes to; a rule follows them by verb
+(`{:related {:tilakone/to …}}`).
 
 `check` adds:
 

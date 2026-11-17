@@ -26,6 +26,12 @@
              (= [:duct.profile/base] (:integrant/profiles (ig :shop/cache))))
       (check "a ::keyword defmethod, with the file's namespace"
              (true? (:integrant/init-key (ig :shop.system/const))))
+      (check "refs are dependencies; what a key derives from is a relation that is a dependency too"
+             (let [reached #(set (map :dev-id (:reaches (index/reach idx %))))]
+               (and (contains? (reached :shop/handler) :shop/db)
+                    (contains? (reached :shop.http/main) :shop/http-server)
+                    (= :integrant/derives (get-in idx [:relations :integrant/derives]))
+                    (contains? (:depending idx) :integrant/derives))))
       (check "a derive call in a file that uses integrant"
              (= [:shop.system/const] (:integrant/isa (ig :shop/base-path))))
       (check "a ref to a key no config defines"

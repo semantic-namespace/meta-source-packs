@@ -33,5 +33,11 @@
              (and (= #{:shop.order/fsm} (set (get-in (index/where ti :shop.order/paying) [:entry :tilakone/machines])))
                   (contains? (set (get-in (index/where ti :shop.order/paying) [:entry :tilakone/on])) :tilakone/any)
                   (= #{:shop.order/cart :shop.order/fsm}
-                     (set (map :dev-id (:referenced-by (index/uses ti :shop.order/paying))))))))
+                     (set (map :dev-id (:referenced-by (index/uses ti :shop.order/paying)))))))
+      (let [reached #(set (map :dev-id (:reaches (index/reach ti %))))]
+        (check "tilakone: a machine depends on its states; a state's machine and its transitions are relations, not dependencies"
+               (and (contains? (reached :shop.order/fsm) :shop.order/paying)
+                    (not (contains? (reached :shop.order/paying) :shop.order/fsm))
+                    (not (contains? (reached :shop.order/paying) :shop.order/cart))
+                    (= :tilakone/state-of (get-in ti [:relations :tilakone/machines]))))))
     (fs/delete-tree dir)))

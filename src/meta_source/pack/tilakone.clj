@@ -167,6 +167,16 @@
    ;; a state is often another registry's id: a workflow step, a spec
    :pack/describes? true
    :pack/merge {:tilakone/machines :union :tilakone/on :union :tilakone/to :union}
+   ;; what each key's ids are to the entity: a machine runs its states (a
+   ;; dependency); the rest are the machine's shape, not dependencies. As
+   ;; dependencies, a state's :tilakone/machines would make every state of a
+   ;; machine reach every other through it.
+   :pack/relations {:tilakone/states {:verb :tilakone/states :depends true}
+                    :tilakone/initial {:verb :tilakone/initial}
+                    :tilakone/transitions {:verb :tilakone/transitions}
+                    :tilakone/machines {:verb :tilakone/state-of}
+                    :tilakone/on {:verb :tilakone/on}
+                    :tilakone/to {:verb :tilakone/to}}
    :pack/find find-forms
    :pack/read read-forms
    :pack/checks checks
