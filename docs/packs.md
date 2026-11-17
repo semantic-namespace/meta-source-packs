@@ -618,7 +618,10 @@ rest is the child's when it gives it.
   (`:require-privilege`, `:permission`, `:roles`), symbols qualified, values
   written as code as `:reitit/code`. Rules test them:
   `{:not {:= {[:reitit/data :permission] nil}}}`.
-- `:reitit/ns` and `:reitit/in`: the namespace and the def it is written in.
+- `:reitit/ns` and `:reitit/in`: the namespaces and defs it is written in,
+  each a set (`:pack/merge :each`). Two routers naming a route alike give one
+  route written in two places; only the keys that say what it is (path,
+  handlers) conflict when they disagree.
 
 `rfe/href`, `rfe/push-state`, `rfe/replace-state` and `match-by-name` with a
 literal route name are references to it. `check` adds:
