@@ -257,6 +257,13 @@ Each config key becomes a component, in the pack's own vocabulary:
   config, `(ig/ref k)` in a config written in code. Refs are references, so
   `meta-source uses :shop/db` lists the components that need it, and an EDN
   contract naming a component in its deps links a function to it.
+- What each key's ids are (`:pack/relations`): `:integrant/refs`,
+  `:integrant/refsets` and `:integrant/composite-refs` are dependencies
+  (`:depends`). What a key derives from, `:integrant/derives` and
+  `:integrant/isa`, is a relation of that name and a dependency too: a key
+  with no `init-key` of its own runs its parent's. The keys an `init-key`
+  writes (`:integrant/init-writes`) or an `expand-key` adds
+  (`:integrant/expands-to`) are relations, not dependencies.
 - Config files are read all at once: a key that a `.mock.edn` or test variant
   configures too is one component with every file listed, not a conflict.
   Tags no reader knows (`#env`, `#or`, `#profile`) are kept as data.
@@ -732,6 +739,14 @@ state lists the states that go to it and its machines. The pack describes its
 states, as atlas describes an integrant key: a state is often another
 registry's id (a workflow step, an error spec), whose declaration stays
 primary.
+
+What each key's ids are (`:pack/relations`): a machine depends on its
+`:tilakone/states`, so `deps` and `:reaches` go from a machine to its states.
+The rest are relations by name, not dependencies: `:tilakone/initial`,
+`:tilakone/transitions`, `:tilakone/on`, `:tilakone/to`, and a state's
+`:tilakone/machines` as `:tilakone/state-of`. A state doesn't reach its
+machine, nor the states it goes to; a rule follows them by verb
+(`{:related {:tilakone/to …}}`).
 
 `check` adds:
 
