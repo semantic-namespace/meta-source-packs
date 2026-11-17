@@ -46,6 +46,15 @@ and for a `:map` its qualified `:malli/keys` and its `:malli/unqualified-keys`.
 Forms are kept as text. Nothing is loaded; `.cljc` reader conditionals are
 read as `:clj`.
 
+A schema depends on the keys it's made of, so `deps` and `:reaches` follow
+them; each is also a relation under the key that lists it (`:spec/req`,
+`:spec/opt`, `:spec/req-un`, `:spec/opt-un`, `:malli/keys`), for a rule to
+follow by name (`{:related {:spec/req …}}`). `:spec/refs` and `:malli/refs`
+are every other qualified keyword in the form, an enum's values among them:
+relations, not dependencies. (A data key is never a reference, so these
+edges only reach entities that aren't data keys: a component a config spec
+names, a state an enum lists.)
+
 A data key is one entity whatever describes it, so a registry file can add
 facts the schema has no place for:
 
