@@ -15,7 +15,7 @@
                   (= [{:pack :reitit :line 14 :reason "1 child route(s) written as code, not read"}]
                      (map #(select-keys % [:pack :line :reason]) (filter #(= :reitit (:pack %)) (problems ri :pack-form-not-read))))))
       (check "a named route: its path joined from its parents, handler, inherited middleware, parameter and response keys"
-             (= #:reitit{:path "/api/users/:id" :ns "shop.routes" :methods [:get] :handlers ['shop.api/get-user]
+             (= #:reitit{:path "/api/users/:id" :ns #{"shop.routes"} :methods [:get] :handlers ['shop.api/get-user]
                          :middleware ['shop.middleware/token-auth] :parameter-keys [:user/id]
                          :response-keys [:shop.spec/user] :linked true}
                 (entry :shop.routes/user)))
@@ -56,6 +56,27 @@
                  (and (ids :app.routes/users) (ids :app.routes/orders)))
           (check "a project's own fn named router isn't reitit's: the tree handed to it isn't read as routes"
                  (not (ids :app.routes/carts))))
+        (fs/delete-tree dir))
+      ;; logseq's case: a desktop and a mobile router name their routes alike
+      (let [dir (str (fs/create-temp-dir))]
+        (fs/create-dirs (str dir "/src/desktop"))
+        (fs/create-dirs (str dir "/src/mobile"))
+        (spit (str dir "/src/desktop/routes.cljs")
+              (str "(ns desktop.routes)\n"
+                   "(def routes [[\"/\" {:name :home :view desktop.views/home}] [\"/page/:name\" {:name :page :view desktop.views/page}]])\n"))
+        (spit (str dir "/src/mobile/routes.cljs")
+              (str "(ns mobile.routes)\n"
+                   "(def routes [[\"/\" {:name :home :view mobile.views/home}] [\"/pages/:name\" {:name :page :view mobile.views/page}]])\n"))
+        (let [ix (index/build {:root dir :src ["src"] :registry [] :packs {:reitit {}}})
+              e #(:entry (index/where ix %))]
+          (check "two routers naming a route alike: one route written in two places, never a conflict on where; a conflict on what it is"
+                 (and (= #{"desktop.routes" "mobile.routes"} (:reitit/ns (e :home)) (:reitit/ns (e :page)))
+                      (= #{'desktop.routes/routes 'mobile.routes/routes} (:reitit/in (e :home)))
+                      (= "/" (:reitit/path (e :home)))
+                      ;; what each declaration says it is still conflicts: :page's
+                      ;; path, and each route's view
+                      (= [[:home :reitit/view] [:page :reitit/path] [:page :reitit/view]]
+                         (sort (map (juxt :dev-id :key) (problems ix :conflicting-values)))))))
         (fs/delete-tree dir))
       (check "a route consumes its parameter keys, next to resolvers and functions"
              (some #{:shop.routes/user} (map :dev-id (:consumers (index/data-key ri :user/id)))))))

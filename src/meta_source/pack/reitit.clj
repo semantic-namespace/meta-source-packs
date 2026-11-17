@@ -24,7 +24,8 @@
    gives it. Its entry, in the pack's own vocabulary:
 
      :reitit/path         the path, joined from its parents in the tree
-     :reitit/ns           the namespace it is written in
+     :reitit/ns           the namespaces it is written in, a set: one per
+                          declaration, as two routers may name a route alike
      :reitit/methods      the methods it answers: :get, :post, ...
      :reitit/handlers     the handler vars (symbols), or :reitit/handler-code
                           when a handler is written as a fn there
@@ -37,7 +38,10 @@
      :reitit/data         the rest of its route data, a project's own keys
                           (:require-privilege, :permission), symbols
                           qualified, values written as code as :reitit/code
-     :reitit/in           the def the route is written in, when not a router call
+     :reitit/in           the defs the route is written in, when not a router
+                          call, a set as :reitit/ns. Both say where, not what:
+                          two declarations of one name that agree on the
+                          path and handlers are one route, not a conflict
 
    Each literal route name in rfe/href, rfe/push-state, rfe/replace-state
    and match-by-name gives that name :reitit/linked."
@@ -356,7 +360,7 @@
          (pos? unread) (assoc :unread-trees unread)))
      (for [[id e] routes
            h (get-in e [:entry :reitit/handlers])
-           :when (and (not= (namespace h) (get-in e [:entry :reitit/ns])) (false? (var-defined? h)))]
+           :when (and (not (contains? (get-in e [:entry :reitit/ns]) (namespace h))) (false? (var-defined? h)))]
        {:severity :warning :problem :handler-not-found :dev-id id :calls h :definition (loc e)})
      (when (get-in opts [:reitit :pattern])
        (for [[id e] routes
@@ -461,6 +465,8 @@
     :handler-not-found (fn [p id _] (str id "'s handler " (:calls p) " is not defined"))}
    :pack/kinds #{kind}
    :pack/vocabulary #{"reitit"}
+   ;; where a route is written, one value per declaration
+   :pack/merge {:reitit/ns :each :reitit/in :each}
    :pack/data-keys? false
    :pack/dataflow {:consumes [:reitit/parameter-keys] :produces [:reitit/response-keys]}
    :pack/find find-forms
